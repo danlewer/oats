@@ -2,12 +2,11 @@
 # It is written for R version 3.6.1, using the package 'data.table'
 # It shows how the SMR and life expectancies reported in the article are calculated
 # The results vary slightly from the published results because:
-#   (a) noise has been added to the data to maintain confidentiality
+#   (a) noise has been added to the OATS data
 #   (b) the actual analysis stratifies mortality rates by year as well as age and sex
 # Data and results are only provided for men, because the majority of the sample is male and confidentiality was simpler to maintain
 
 library(data.table)
-setwd("N:/Q/ndarc/life_expectancy/public_data_and_code")
 set.seed(17)
 
 #--------------------
@@ -16,9 +15,9 @@ set.seed(17)
 
 # OATS mortality data. 'fut' = follow-up time (person-years)
 # follow-up time has been calculating by age during follow-up (rather than age at baseline), by day
-# numbers of deaths have a random value of {rpois(N, 2) - 2} added; to maintain anonymity
+# numbers of deaths have a random value of {rpois(N, 5) - 5} added
 
-m <- fread('oats_mortality_data.csv') 
+m <- fread('https://raw.githubusercontent.com/danlewer/oats/master/oats_mortality_data.csv') 
 
 #--------------------
 # read reference data
@@ -28,7 +27,7 @@ m <- fread('oats_mortality_data.csv')
 # reference data is avaiable at:
 # Australian Bureau of Statistics. ABS.Stat. 2019. Available from: http://stat.data.abs.gov.au/
 
-r <- fread('ref_nsw_data.csv') # New South Wales mortality and population data, 2001-2018
+r <- fread('https://raw.githubusercontent.com/danlewer/oats/master/ref_nsw_data.csv')
 
 #----------
 # join data
@@ -74,7 +73,6 @@ smr <- cbind(smr, t(mmc))
 
 # predict mortality rate based on exponential increase
 model <- glm(m ~ age + offset(log(fut)), mr[age %in% 18:74], family = 'poisson')
-exp(model$coefficients[2]) # mortality rate increases by 1.06x per year
 mr[, pred_rate := predict(model, newdata = data.table(age = 0:99, fut = 100000), type = 'response')]
 
 # 'base' scenario is actual rate from ages 25-64, and maximum of predicted rate from poisson model and general population rate
@@ -106,7 +104,7 @@ life.table <- function(mx, cohort = 100000) {
   t <- (lx + c(lx[-1], 0)) / 2
   Tx <- rev(cumsum(rev(t)))
   ex <- Tx / lx
-  return(data.frame(lx = lx, dx = dx, t = t, Tx = Tx, ex = ex)[1:n,])
+  data.frame(lx = lx, dx = dx, t = t, Tx = Tx, ex = ex)[1:n,]
 }
 
 # make life tables for OAT cohort and general population
@@ -114,10 +112,9 @@ life.table <- function(mx, cohort = 100000) {
 lt_oat <- life.table(mr[age > 17]$base)
 lt_ref <- life.table(mr[age > 17]$ref_rate)
 
-lt_oat$ex[1]
-lt_ref$ex[1]
-lt_ref$ex[1] - lt_oat$ex[1]
-# life expectancy for men age 18 = 48.3; general population = 62.2; gap = 13.9 years
+lt_oat$ex[1] # life expectancy for men age 18 = 48.3
+lt_ref$ex[1] # general population = 62.2
+lt_ref$ex[1] - lt_oat$ex[1] # gap = 13.9 years
 
 # plot survival curves
 
