@@ -5,6 +5,7 @@
 #   (a) noise has been added to the OATS data
 #   (b) the actual analysis stratifies mortality rates by year as well as age and sex
 # Data and results are only provided for men, because the majority of the sample is male and confidentiality was simpler to maintain
+# The code also includes an example of the 'Lexis expansion' used in the analysis
 
 library(data.table)
 set.seed(17)
@@ -122,3 +123,24 @@ plot(1, type = 'n', xlim = c(18, 100), ylim = c(0, 100000), xlab = 'Age', ylab =
 ages <- 18:100
 lines(ages, lt_ref$lx, lty = 3) # general population
 lines(ages, lt_oat$lx, lwd = 2, col = 'red') # OAT cohort
+
+#-----------------------------
+# example of 'lexis expansion'
+#-----------------------------
+
+# make example data for three individuals
+
+led <- data.table(id = 1:3,
+                  dob = as.Date(c('1960-05-02', '1974-12-12', '1981-06-10')), # date of birth
+                  entry = as.Date(c('2002-01-31', '2006-04-29', '2003-09-02')), # enters cohort
+                  exit = as.Date(c('2010-04-30', '2007-08-01', '2017-02-27'))) # exits cohort
+
+# expand data
+
+lexis <- led[, .(day = seq(entry, exit, by = 'day')), c('id', 'dob')] # expand by day
+lexis[, age := floor(as.numeric(day - dob) / 365.25)] # age at last birthday
+lexis[, year := format(day, '%Y')]
+
+# summarise follow-up by age and year
+
+lexis[, .(followUpDays = .N), c('age', 'year')][order(age, year)]
