@@ -1,4 +1,4 @@
-# This code accompanies the article XXXX
+# This code accompanies the article "Life expectancy of people who are dependent on opioids: a cohort study in New South Wales, Australia". https://doi.org/10.1016/j.jpsychires.2020.08.013
 # It is written for R version 3.6.1, using the package 'data.table'
 # It shows how the SMR and life expectancies reported in the article are calculated
 # The results vary slightly from the published results because:
